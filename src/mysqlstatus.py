@@ -45,6 +45,7 @@ import time
 import curses
 import logging
 import datetime
+import getpass
 
 
 __title__ = 'mysqlstatus'
@@ -321,6 +322,8 @@ class MySQLStatus:
 
     def __init__(self, options):
         self.options = options
+        if self.options.password is None:
+            self.options.password = getpass.getpass()
         if self.options.user is None:
             self.options.user = os.getenv('USERNAME')
 
