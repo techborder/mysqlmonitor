@@ -510,7 +510,7 @@ class CliMode(MySQLStatus):
         process = self.qthread.mysql_processeslist_clean
         # Go through rows
         for row in process:
-            self.output.write(st + ", " + str(row))
+            self.output.write(st + ", " + str(row) + "\n")
         #self.output.write("Hello")
         #self.output.write(str(process))
 
