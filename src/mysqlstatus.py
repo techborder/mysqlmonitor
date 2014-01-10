@@ -85,7 +85,7 @@ def get_args_parser():
         default=sys.stdout,
         nargs='?',
         type=argparse.FileType('w'),
-        help="Output result file. avairable for non-interactive.")
+        help="Output result file. Available for non-interactive.")
     parser.add_argument("-n", "--nonint",
         default=False,
         action='store_true',
@@ -118,7 +118,9 @@ class QueryThread(threading.Thread):
         self.mysql_last_status = None
 
         self._db = kwargs.get('db')
-        self._cursor = self._db.cursor(Database.cursors.DictCursor)
+        self._cursor = self._db.cursor()
+        #self._cursor = self._db.cursor(Database.cursors.DictCursor)
+        self._cursor_no_columns = self._db.cursor()
         self._interval = kwargs.get('interval', 1)
         self._mode = 'status'
 
@@ -171,10 +173,15 @@ class QueryThread(threading.Thread):
     def mysql_procesesslist(self):
         return self._mysql_procesesslist
 
+    @property
+    def mysql_processeslist_clean(self):
+        return self._mysql_processeslist_clean
+
     def run(self):
         while self._stop == False:
             if self._mode == 'process':
-                self.get_procesesslist()
+                #self.get_procesesslist()
+                self.get_processeslist_clean()
             else:
                 self.get_status()
             time.sleep(self._interval)
@@ -189,6 +196,17 @@ class QueryThread(threading.Thread):
         try:
             self.lock.acquire()
             self._cursor.execute(sql)
+            result = self._cursor.fetchall()
+            self.lock.release()
+        except Exception, err:
+            logging.exception(err)
+        return result
+
+    def query_no_columns(self, sql):
+        result = ()
+        try:
+            self.lock.acquire()
+            self._cursor_no_columns.execute(sql)
             result = self._cursor.fetchall()
             self.lock.release()
         except Exception, err:
@@ -212,7 +230,20 @@ class QueryThread(threading.Thread):
         self._mysql_procesesslist = result
         self._update = True
         logging.debug(result)
-        return self.mysql_procesesslist()
+        # DEBUG
+        return 0
+        #return self.mysql_procesesslist()
+
+    def get_processeslist_clean(self):
+        """SHOW FULL PROCESSLIST"""
+        #result = self.query_no_columns("SHOW FULL PROCESSLIST")
+        result = self.query("SHOW FULL PROCESSLIST")
+        self._mysql_processeslist_clean = result
+        self._update = True
+        logging.debug(result)
+        # DEBUG
+        return 0
+        #return self.mysql_procesesslist()
 
     def get_query_per_second(self):
         if self._mysql_status is None:
@@ -475,8 +506,13 @@ class CliMode(MySQLStatus):
         self.output.write(str(status))
 
     def show_update_process(self):
-        process = self.qthread.mysql_procesesslist
-        self.output.write(str(process))
+        #process = self.qthread.mysql_procesesslist
+        process = self.qthread.mysql_processeslist_clean
+        # Go through rows
+        for row in process:
+            print row
+        #self.output.write("Hello")
+        #self.output.write(str(process))
 
     def cleanup(self):
         self.qthread.stop = True
