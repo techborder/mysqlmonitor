@@ -44,7 +44,7 @@ import MySQLdb as Database
 import time
 import curses
 import logging
-from datetime import datetime
+import datetime
 
 
 __title__ = 'mysqlstatus'
@@ -118,8 +118,7 @@ class QueryThread(threading.Thread):
         self.mysql_last_status = None
 
         self._db = kwargs.get('db')
-        self._cursor = self._db.cursor()
-        #self._cursor = self._db.cursor(Database.cursors.DictCursor)
+        self._cursor = self._db.cursor(Database.cursors.DictCursor)
         self._cursor_no_columns = self._db.cursor()
         self._interval = kwargs.get('interval', 1)
         self._mode = 'status'
@@ -207,7 +206,7 @@ class QueryThread(threading.Thread):
         try:
             self.lock.acquire()
             self._cursor_no_columns.execute(sql)
-            result = self._cursor.fetchall()
+            result = self._cursor_no_columns.fetchall()
             self.lock.release()
         except Exception, err:
             logging.exception(err)
@@ -236,8 +235,7 @@ class QueryThread(threading.Thread):
 
     def get_processeslist_clean(self):
         """SHOW FULL PROCESSLIST"""
-        #result = self.query_no_columns("SHOW FULL PROCESSLIST")
-        result = self.query("SHOW FULL PROCESSLIST")
+        result = self.query_no_columns("SHOW FULL PROCESSLIST")
         self._mysql_processeslist_clean = result
         self._update = True
         logging.debug(result)
@@ -506,11 +504,13 @@ class CliMode(MySQLStatus):
         self.output.write(str(status))
 
     def show_update_process(self):
+        ts = time.time()
+        st = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d+%H:%M:%S')
         #process = self.qthread.mysql_procesesslist
         process = self.qthread.mysql_processeslist_clean
         # Go through rows
         for row in process:
-            print row
+            self.output.write(st + ", " + str(row))
         #self.output.write("Hello")
         #self.output.write(str(process))
 
