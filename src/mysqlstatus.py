@@ -113,7 +113,7 @@ class QueryThread(threading.Thread):
     _update = False
     _mysql_variables = None
     _mysql_status = None
-    _mysql_procesesslist = None
+    _mysql_processlist = None
 
     def __init__(self, **kwargs):
 
@@ -171,18 +171,18 @@ class QueryThread(threading.Thread):
         self._stop = value
 
     @property
-    def mysql_procesesslist(self):
-        return self._mysql_procesesslist
+    def mysql_processlist(self):
+        return self._mysql_processlist
 
     @property
-    def mysql_processeslist_clean(self):
-        return self._mysql_processeslist_clean
+    def mysql_processlist_clean(self):
+        return self._mysql_processlist_clean
 
     def run(self):
         while self._stop == False:
             if self._mode == 'process':
-                #self.get_procesesslist()
-                self.get_processeslist_clean()
+                #self.get_processlist()
+                self.get_processlist_clean()
             else:
                 self.get_status()
             time.sleep(self._interval)
@@ -225,25 +225,25 @@ class QueryThread(threading.Thread):
         self._update = True
         return self._mysql_status
 
-    def get_procesesslist(self):
+    def get_processlist(self):
         """SHOW FULL PROCESSLIST"""
         result = self.query("SHOW FULL PROCESSLIST")
-        self._mysql_procesesslist = result
+        self._mysql_processlist = result
         self._update = True
         logging.debug(result)
         # DEBUG
         return 0
-        #return self.mysql_procesesslist()
+        #return self.mysql_processlist()
 
-    def get_processeslist_clean(self):
+    def get_processlist_clean(self):
         """SHOW FULL PROCESSLIST"""
         result = self.query_no_columns("SHOW FULL PROCESSLIST")
-        self._mysql_processeslist_clean = result
+        self._mysql_processlist_clean = result
         self._update = True
         logging.debug(result)
         # DEBUG
         return 0
-        #return self.mysql_procesesslist()
+        #return self.mysql_processlist()
 
     def get_query_per_second(self):
         if self._mysql_status is None:
@@ -427,7 +427,7 @@ class IntractiveMode(MySQLStatus):
         """
         Id, Host, db, User, Time, State, Type(Command), Query(Info)
         """
-        process = self.qthread.mysql_procesesslist
+        process = self.qthread.mysql_processlist
         y = 3
         header_format = '%7s, %8s, %8s,%7s,%6s,%6s,%12s,'
         header_item = ('Id', 'Host', 'db', 'Time', 'State', 'Type', 'Query')
@@ -510,8 +510,8 @@ class CliMode(MySQLStatus):
     def show_update_process(self):
         ts = time.time()
         st = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d+%H:%M:%S')
-        #process = self.qthread.mysql_procesesslist
-        process = self.qthread.mysql_processeslist_clean
+        #process = self.qthread.mysql_processlist
+        process = self.qthread.mysql_processlist_clean
         # Go through rows
         for row in process:
             self.output.write(st + ", " + str(row) + "\n")
