@@ -85,7 +85,8 @@ def get_args_parser():
     parser.add_argument("-o", "--outfile",
         default=sys.stdout,
         nargs='?',
-        type=argparse.FileType('w'),
+        type=argparse.FileType('a'),
+        #type=FileType('a'),
         help="Output result file. Available for non-interactive.")
     parser.add_argument("-n", "--nonint",
         default=False,
@@ -103,7 +104,7 @@ def get_args_parser():
     parser.add_argument("--help",
         default=False,
         action='store_true',
-        help="show this help message and exit.")
+        help="Show this help message and exit.")
     return parser
 
 
@@ -521,6 +522,68 @@ class CliMode(MySQLStatus):
         self.qthread.stop = True
         while self.qthread.isAlive():
             pass
+
+
+    def confirm(prompt=None, resp=False):
+        """prompts for yes or no response from the user. Returns True for yes and
+        False for no.
+
+        'resp' should be set to the default value assumed by the caller when
+        user simply types ENTER.
+
+        >>> confirm(prompt='Create Directory?', resp=True)
+        Create Directory? [y]|n: 
+        True
+        >>> confirm(prompt='Create Directory?', resp=False)
+        Create Directory? [n]|y: 
+        False
+        >>> confirm(prompt='Create Directory?', resp=False)
+        Create Directory? [n]|y: y
+        True
+
+        """
+
+        if prompt is None:
+            prompt = 'Confirm'
+
+        if resp:
+            prompt = '%s [%s]|%s: ' % (prompt, 'y', 'n')
+        else:
+            prompt = '%s [%s]|%s: ' % (prompt, 'n', 'y')
+
+        while True:
+            ans = raw_input(prompt)
+            if not ans:
+                return resp
+            if ans not in ['y', 'Y', 'n', 'N']:
+                print 'please enter y or n.'
+                continue
+            if ans == 'y' or ans == 'Y':
+                return True
+            if ans == 'n' or ans == 'N':
+                return False
+
+
+
+class FileTypeAppend(argparse.FileType):
+
+    def __call__(self, string):
+        # the special argument "-" means sys.std{in,out}
+        if string == '-':
+            if 'r' in self._mode:
+                return sys.stdin
+            elif any(m in self._mode for m in 'wa'):
+                return sys.stdout
+            else:
+                msg = _('argument "-" with mode %r') % self._mode
+                raise ValueError(msg)
+
+        # all other arguments are used as file names
+        try:
+            return open(string, self._mode, self._bufsize)
+        except IOError as e:
+            message = _("can't open '%s': %s")
+            raise ArgumentTypeError(message % (string, e))
 
 
 if __name__ == '__main__':
