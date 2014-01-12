@@ -181,8 +181,9 @@ class QueryThread(threading.Thread):
     def run(self):
         while self._stop == False:
             if self._mode == 'process':
-                #self.get_processlist()
-                self.get_processlist_clean()
+                self.get_processlist()
+                #self.get_processlist_clean()
+                #print( "DEBUG" )
             else:
                 self.get_status()
             time.sleep(self._interval)
@@ -393,7 +394,7 @@ class IntractiveMode(MySQLStatus):
         variables = self.qthread.mysql_variables
         data = {
             'hostname': variables.get('hostname'),
-            'currenttime': datetime.now().strftime("%Y-%m-%d %H:%m:%S"),
+            'currenttime': datetime.datetime.now().strftime("%Y-%m-%d %H:%m:%S"),
             'mysql_version': variables.get('version'),
         }
         data = "%(hostname)s, %(currenttime)s, %(mysql_version)s" % data
