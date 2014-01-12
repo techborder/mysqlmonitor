@@ -564,28 +564,6 @@ class CliMode(MySQLStatus):
                 return False
 
 
-
-class FileTypeAppend(argparse.FileType):
-
-    def __call__(self, string):
-        # the special argument "-" means sys.std{in,out}
-        if string == '-':
-            if 'r' in self._mode:
-                return sys.stdin
-            elif any(m in self._mode for m in 'wa'):
-                return sys.stdout
-            else:
-                msg = _('argument "-" with mode %r') % self._mode
-                raise ValueError(msg)
-
-        # all other arguments are used as file names
-        try:
-            return open(string, self._mode, self._bufsize)
-        except IOError as e:
-            message = _("can't open '%s': %s")
-            raise ArgumentTypeError(message % (string, e))
-
-
 if __name__ == '__main__':
     parser = get_args_parser()
     options = parser.parse_args()
