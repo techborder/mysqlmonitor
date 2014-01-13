@@ -13,7 +13,7 @@ REQUIREMENTS
 ------------
 
  - python2.7
- - MySQLdb
+ - MySQLdb. WARNING: Be very careful when installing MySQLdb through apt-get (aptitude), in one case, apt-get uninstalled mysql-server without asking for confirmation.
 
 mysqlstaus.py
 -------------
