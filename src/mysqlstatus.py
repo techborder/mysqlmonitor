@@ -49,8 +49,8 @@ import getpass
 
 
 __title__ = 'mysqlstatus'
-__version__ = '0.1.0-DEV'
-__author__ = 'Shoma Suzuki'
+__version__ = '0.1.0'
+__author__ = 'Shoma Suzuki with modifications by David Regal'
 __license__ = 'MIT'
 __copyright__ = 'Copyright 2012 Shoma Suzuki'
 
@@ -86,17 +86,16 @@ def get_args_parser():
         default=sys.stdout,
         nargs='?',
         type=argparse.FileType('a'),
-        #type=FileType('a'),
         help="Output result file. Available for non-interactive.")
     parser.add_argument("-n", "--nonint",
         default=False,
         action='store_true',
-        help="Non-interactive.")
+        help="Non-interactive. Process is in a tab separated format.")
     parser.add_argument("-m", "--mode",
         default='status',
         nargs='?',
         choices=['status', 'process'],
-        help="monitoring Mode")
+        help="Monitoring Mode")
     parser.add_argument("--debug",
         default=False,
         action='store_true',
@@ -174,16 +173,10 @@ class QueryThread(threading.Thread):
     def mysql_processlist(self):
         return self._mysql_processlist
 
-    @property
-    def mysql_processlist_clean(self):
-        return self._mysql_processlist_clean
-
     def run(self):
         while self._stop == False:
             if self._mode == 'process':
                 self.get_processlist()
-                #self.get_processlist_clean()
-                #print( "DEBUG" )
             else:
                 self.get_status()
             time.sleep(self._interval)
@@ -232,19 +225,7 @@ class QueryThread(threading.Thread):
         self._mysql_processlist = result
         self._update = True
         logging.debug(result)
-        # DEBUG
         return 0
-        #return self.mysql_processlist()
-
-    def get_processlist_clean(self):
-        """SHOW FULL PROCESSLIST"""
-        result = self.query_no_columns("SHOW FULL PROCESSLIST")
-        self._mysql_processlist_clean = result
-        self._update = True
-        logging.debug(result)
-        # DEBUG
-        return 0
-        #return self.mysql_processlist()
 
     def get_query_per_second(self):
         if self._mysql_status is None:
@@ -479,6 +460,7 @@ class CliMode(MySQLStatus):
         logging.debug('starting CliMode')
         self.output = self.options.outfile
         try:
+            self.show_header_process()
             self.mainloop()
         except (KeyboardInterrupt, SystemExit), event:
             logging.exception(event)
@@ -494,7 +476,10 @@ class CliMode(MySQLStatus):
         while True:
             if self.qthread.update == True:
                 self.output_action()
-                time.sleep(0.1)
+                # On VMware Dev machine with 1 processor, setting sleep to 0.1 
+                # too much CPU (near 100%). Sleep interval of 0.4 consumes 70%.
+                # Interval of 0.7 consumes about 30%.
+                time.sleep(0.7)
 
     def output_action(self):
         self.qthread.update = False
@@ -508,62 +493,30 @@ class CliMode(MySQLStatus):
         status = self.qthread.mysql_status
         self.output.write(str(status))
 
+    def show_header_process(self):
+        header_format = '%s\t%s\t%s\t%s\t%s\t%s\t%s'
+        header_item = ('Id', 'Host', 'db', 'Time', 'State', 'Type', 'Query')
+        header = header_format % header_item
+        variables = self.qthread.mysql_variables
+        self.output.write("Datetime\t" + header + "\n")
+
     def show_update_process(self):
+        """
+        Datetime, Id, Host, db, User, Time, State, Type(Command), Query(Info)
+        """
+        data_format = '%(Id)s\t%(Host)s\t%(db)s\t%(Time)s\t%(State)s\t%(Command)s\t%(Info)s'
         ts = time.time()
         st = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d+%H:%M:%S')
-        #process = self.qthread.mysql_processlist
-        process = self.qthread.mysql_processlist_clean
+        process = self.qthread.mysql_processlist
         # Go through rows
         for row in process:
-            self.output.write(st + ", " + str(row) + "\n")
-        #self.output.write("Hello")
-        #self.output.write(str(process))
+            data = data_format % row
+            self.output.write(st + "\t" + data + "\n")
 
     def cleanup(self):
         self.qthread.stop = True
         while self.qthread.isAlive():
             pass
-
-
-    def confirm(prompt=None, resp=False):
-        """prompts for yes or no response from the user. Returns True for yes and
-        False for no.
-
-        'resp' should be set to the default value assumed by the caller when
-        user simply types ENTER.
-
-        >>> confirm(prompt='Create Directory?', resp=True)
-        Create Directory? [y]|n: 
-        True
-        >>> confirm(prompt='Create Directory?', resp=False)
-        Create Directory? [n]|y: 
-        False
-        >>> confirm(prompt='Create Directory?', resp=False)
-        Create Directory? [n]|y: y
-        True
-
-        """
-
-        if prompt is None:
-            prompt = 'Confirm'
-
-        if resp:
-            prompt = '%s [%s]|%s: ' % (prompt, 'y', 'n')
-        else:
-            prompt = '%s [%s]|%s: ' % (prompt, 'n', 'y')
-
-        while True:
-            ans = raw_input(prompt)
-            if not ans:
-                return resp
-            if ans not in ['y', 'Y', 'n', 'N']:
-                print 'please enter y or n.'
-                continue
-            if ans == 'y' or ans == 'Y':
-                return True
-            if ans == 'n' or ans == 'N':
-                return False
-
 
 if __name__ == '__main__':
     parser = get_args_parser()
