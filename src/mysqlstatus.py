@@ -95,7 +95,7 @@ def get_args_parser():
         default='status',
         nargs='?',
         choices=['status', 'process'],
-        help="Monitoring Mode")
+        help="Monitoring Mode. In non-interactive mode, --mode=status needs formatting like process.")
     parser.add_argument("--debug",
         default=False,
         action='store_true',
@@ -379,7 +379,8 @@ class IntractiveMode(MySQLStatus):
             'mysql_version': variables.get('version'),
         }
         data = "%(hostname)s, %(currenttime)s, %(mysql_version)s" % data
-        self.window.addstr(0, 0, data)
+        note = ", Press q to exit."
+        self.window.addstr(0, 0, data + note)
         self.window.addstr(1, 0, "-" * 70)
 
     def show_update(self):
@@ -441,7 +442,7 @@ class IntractiveMode(MySQLStatus):
            p : switch to process mode
            h : show this help message
            ? : alias of help
-           q : quit
+           q : quit. If your interval is high (e.g. greater than 5), then press q then Ctrl+c to exit quickly.
 
            [Press any key to continue]"""
 
@@ -476,10 +477,11 @@ class CliMode(MySQLStatus):
         while True:
             if self.qthread.update == True:
                 self.output_action()
-                # On VMware Dev machine with 1 processor, setting sleep to 0.1 
-                # too much CPU (near 100%). Sleep interval of 0.4 consumes 70%.
+                # WARNING: On server breve with 12 cores and VMware Dev machine
+                # with 1 processor, using 0.1 for time.sleep hogged the  
+                # CPU (near 100%). Sleep interval of 0.4 consumes 70%.
                 # Interval of 0.7 consumes about 30%.
-                time.sleep(0.7)
+                time.sleep(self.options.interval)
 
     def output_action(self):
         self.qthread.update = False
@@ -490,7 +492,6 @@ class CliMode(MySQLStatus):
         self.output.write("\n")
 
     def show_update_status(self):
-        status = self.qthread.mysql_status
         self.output.write(str(status))
 
     def show_header_process(self):
