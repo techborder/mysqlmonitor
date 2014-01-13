@@ -7,7 +7,7 @@ MySQL Monitor is inspired by `innotop <http://code.google.com/p/innotop/>`_ and 
 
 STATUS
 ------
-**Work in process**
+**Tested working.**
 
 REQUIREMENTS
 ------------
