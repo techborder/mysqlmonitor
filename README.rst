@@ -5,6 +5,18 @@ MySQL Monitor is a console-based (non-gui) tool for monitoring MySQL server.
 
 MySQL Monitor is inspired by `innotop <http://code.google.com/p/innotop/>`_ and `mytop <http://jeremy.zawodny.com/mysql/mytop/>`_ .
 
+Cloned from shoma's https://github.com/shoma/mysqlmonitor.
+
+IMPROVEMENTS
+------
+- Changed sleep interval to be the same as given on command line argument. Added more info in help. 
+- Added header to output. Lower processor resource consumed by increasing sleep time. 
+- Changed default to append to a file instead of wiping it out.
+- Added prompt for password when blank in arg list.
+- Created separate methods to output different format, one with timestamp for troubleshooting.
+- Cleaner output by removing columns in front of values of process list.
+
+
 STATUS
 ------
 **Tested working.**
@@ -13,7 +25,7 @@ REQUIREMENTS
 ------------
 
  - python2.7
- - MySQLdb. WARNING: Be very careful when installing MySQLdb through apt-get (aptitude), in one case, apt-get uninstalled mysql-server without asking for confirmation.
+ - MySQLdb. WARNING: If installing through apt-get, add ‘-s’ or ‘--simulate'. E.g. 'sudo apt-get --simulate install php5-mysqlnd' and make sure MySQL server is not removed. Else be very careful when installing MySQLdb through apt-get (aptitude), in one case, apt-get uninstalled mysql-server without asking for confirmation.
 
 mysqlstaus.py
 -------------
